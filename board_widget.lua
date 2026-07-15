@@ -93,7 +93,7 @@ function SandwichSudokuBoardWidget:paintTo(bb, x, y)
             local cell_cy = gy + (r - 0.5) * cell
             local m = RenderText:sizeUtf8Text(0, margin - 2, clue_face, text, true, false)
             local tx = x + math.floor((margin - m.x) / 2)
-            local ty = math.floor(cell_cy) - math.floor((m.y_bottom - m.y_top) / 2) + math.abs(m.y_top)
+            local ty = math.floor(cell_cy) - math.floor((m.y_bottom - m.y_top) / 2)
             RenderText:renderUtf8Text(bb, tx, ty, clue_face, text, true, false, clue_color)
         end
     end
@@ -106,7 +106,7 @@ function SandwichSudokuBoardWidget:paintTo(bb, x, y)
             local cell_cx = gx + (c - 0.5) * cell
             local m = RenderText:sizeUtf8Text(0, cell, clue_face, text, true, false)
             local tx = math.floor(cell_cx) - math.floor(m.x / 2)
-            local ty = y + math.floor((margin - (m.y_bottom - m.y_top)) / 2) + math.abs(m.y_top)
+            local ty = y + math.floor((margin - (m.y_bottom - m.y_top)) / 2)
             RenderText:renderUtf8Text(bb, tx, ty, clue_face, text, true, false, clue_color)
         end
     end
