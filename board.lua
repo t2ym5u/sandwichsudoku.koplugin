@@ -170,11 +170,11 @@ function SandwichSudokuBoard:load(state)
     return true
 end
 
-function SandwichSudokuBoard:generate(difficulty)
+function SandwichSudokuBoard:generate(difficulty, on_progress)
     self.difficulty = difficulty or self.difficulty or DEFAULT_DIFFICULTY
     local n, box_rows, box_cols = self.n, self.box_rows, self.box_cols
     local solution = generateSolvedBoard(n, box_rows, box_cols)
-    local puzzle   = createPuzzle(solution, self.difficulty, n, box_rows, box_cols)
+    local puzzle   = createPuzzle(solution, self.difficulty, n, box_rows, box_cols, nil, on_progress)
     self.puzzle          = puzzle
     self.solution        = solution
     self.user            = emptyGrid(n)
