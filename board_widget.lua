@@ -17,6 +17,7 @@ local BaseBoardWidget  = common.BaseBoardWidget
 local drawLine         = common.drawLine
 local drawDiagonalLine = common.drawDiagonalLine
 local drawConflictMark = common.drawConflictMark
+local fitFontSize      = common.fitFontSize
 
 local Size = require("ui/size")
 
@@ -29,9 +30,8 @@ end
 -- ---------------------------------------------------------------------------
 -- SandwichSudokuBoardWidget
 --
--- Layout: The widget reserves a margin on all 4 sides for clue numbers.
--- The 9x9 grid is drawn inset. Row clues appear on the left margin,
--- column clues appear on the top margin.
+-- Layout: The widget reserves a margin on the left (row clues) and top
+-- (column clues) only; the 9x9 grid fills the rest of the square.
 -- ---------------------------------------------------------------------------
 
 local SandwichSudokuBoardWidget = BaseBoardWidget:extend{
@@ -41,15 +41,43 @@ local SandwichSudokuBoardWidget = BaseBoardWidget:extend{
 function SandwichSudokuBoardWidget:init()
     BaseBoardWidget.init(self)
     local n = self.n or 9
-    -- Reserve a margin around the grid for clue numbers
+    -- Reserve a left/top margin for clue numbers, about 0.8 of a cell.
     -- The total widget size stays the same; grid is drawn smaller inside it
     local total = self.size
-    local clue_margin = math.max(20, math.floor(total * 0.08))
+    local clue_margin = math.max(20, math.floor(total * 0.8 / (n + 0.8)))
     self.clue_margin   = clue_margin
-    self.grid_size     = total - 2 * clue_margin
-    -- Clue font: sized to fit in the margin
-    local clue_size = math.max(8, math.floor(clue_margin * 0.6))
+    self.grid_size     = total - clue_margin
+    local cell = self.grid_size / n
+
+    -- Clue font: the widest sum (two digits) must fit both a column (top
+    -- clues are centred over cells) and the left margin.
+    local clue_w    = math.floor(math.min(cell, clue_margin) * 0.85)
+    local clue_h    = math.floor(math.min(cell, clue_margin) * 0.6)
+    local clue_size = fitFontSize("smallinfofont", 8, clue_w, clue_h, "88")
     self.clue_face  = Font:getFace("smallinfofont", clue_size)
+
+    -- Cell digits and pencil notes, re-fitted to the inset grid cell (the
+    -- base widget sizes its faces against size/n, which is too big once the
+    -- clue margin is carved out), with the same margins as the base widget
+    -- so digits read the same size as in the other variants.
+    local padding  = math.max(2, math.floor(cell / 9))
+    local safety   = math.max(1, math.floor(cell / 20))
+    local num_max  = math.max(1, math.floor(cell - 2 * padding - safety))
+    local num_size = math.max(10, fitFontSize("cfont", 10, num_max, num_max, "8") - 2)
+    self.number_face         = Font:getFace("cfont", num_size)
+    self.number_face_size    = num_size
+    self.number_cell_padding = padding
+    local mini_w    = cell / self.box_cols
+    local mini_h    = cell / self.box_rows
+    local mini      = math.min(mini_w, mini_h)
+    local mini_pad  = math.max(1, math.floor(mini / 8))
+    local mini_safe = math.max(1, math.floor(mini / 18))
+    local note_size = math.max(8, fitFontSize("smallinfofont", 8,
+        math.max(1, math.floor(mini_w - 2 * mini_pad - mini_safe)),
+        math.max(1, math.floor(mini_h - 2 * mini_pad - mini_safe)), "8") - 1)
+    self.note_face         = Font:getFace("smallinfofont", note_size)
+    self.note_face_size    = note_size
+    self.note_mini_padding = mini_pad
 end
 
 function SandwichSudokuBoardWidget:paintTo(bb, x, y)
@@ -92,9 +120,9 @@ function SandwichSudokuBoardWidget:paintTo(bb, x, y)
         if clue_val then
             local text = tostring(clue_val)
             local cell_cy = gy + (r - 0.5) * cell
-            local m = RenderText:sizeUtf8Text(0, margin - 2, clue_face, text, true, false)
+            local m = RenderText:sizeUtf8Text(0, math.huge, clue_face, text, true, false)
             local tx = x + math.floor((margin - m.x) / 2)
-            local ty = math.floor(cell_cy) - math.floor((m.y_bottom - m.y_top) / 2)
+            local ty = math.floor(cell_cy) + math.floor((m.y_top - m.y_bottom) / 2)
             RenderText:renderUtf8Text(bb, tx, ty, clue_face, text, true, false, clue_color)
         end
     end
@@ -105,9 +133,9 @@ function SandwichSudokuBoardWidget:paintTo(bb, x, y)
         if clue_val then
             local text = tostring(clue_val)
             local cell_cx = gx + (c - 0.5) * cell
-            local m = RenderText:sizeUtf8Text(0, cell, clue_face, text, true, false)
+            local m = RenderText:sizeUtf8Text(0, math.huge, clue_face, text, true, false)
             local tx = math.floor(cell_cx) - math.floor(m.x / 2)
-            local ty = y + math.floor((margin - (m.y_bottom - m.y_top)) / 2)
+            local ty = y + math.floor((margin + m.y_top - m.y_bottom) / 2)
             RenderText:renderUtf8Text(bb, tx, ty, clue_face, text, true, false, clue_color)
         end
     end
